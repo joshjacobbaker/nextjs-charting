@@ -17,7 +17,7 @@ const PlotComponent = () => {
             { x: 3, y: 2 },
             { x: 4, y: 4 },
           ],
-          { x: "x", y: "y" }
+          { x: "x", y: "y" },
         ),
       ],
     });
