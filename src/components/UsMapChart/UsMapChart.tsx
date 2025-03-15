@@ -2,17 +2,16 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as Plot from "@observablehq/plot";
-import { feature } from "topojson-client";
-// import { Root } from "@/types";
+import { feature, mesh } from "topojson-client";
 
 const UsMapChart = () => {
   const plotRef = useRef<HTMLDivElement>(null);
   const [nationTopoJsonData, setNationTopoJsonData] = useState<ReturnType<
     typeof feature
   > | null>(null);
-  //   const [stateMeshJsonData, setStateMeshJsonData] = useState<ReturnType<
-  //     typeof mesh
-  //   > | null>(null);
+  const [stateMeshJsonData, setStateMeshJsonData] = useState<ReturnType<
+    typeof mesh
+  > | null>(null);
 
   const countiesAlbers10m = "counties-albers-10m.json";
 
@@ -27,27 +26,30 @@ const UsMapChart = () => {
         geoJsonData.objects.nation
       );
       setNationTopoJsonData(nationTopoJsonData);
+      console.log("nationTopoJsonData", nationTopoJsonData);
 
       //   const stateMeshJson = await fetch("/state-mesh.json");
       //   const stateMeshData = await stateMeshJson.json();
 
-      //   const stateMeshData = mesh(
-      //     geoJsonData,
-      //     geoJsonData.objects.states,
-      //     (a, b) => {
-      //       return a !== b;
-      //     }
-      //   );
+      const stateMeshData = mesh(
+        geoJsonData,
+        geoJsonData.objects.states,
+        (a, b) => a !== b
+      );
 
-      //   console.log("stateMeshData", stateMeshData);
-      //   setStateMeshJsonData(stateMeshData);
+      //   const stateMeshData = feature(geoJsonData, geoJsonData.objects.states);
+
+      console.log("stateMeshData", stateMeshData);
+      setStateMeshJsonData(stateMeshData);
     };
 
     fetchGeoData();
+  }, []);
 
+  useEffect(() => {
     const currentPlotRef = plotRef.current;
 
-    if (nationTopoJsonData && currentPlotRef) {
+    if (nationTopoJsonData && stateMeshJsonData && currentPlotRef) {
       const nationPlot = Plot.plot({
         width: 975,
         height: 600,
@@ -55,13 +57,13 @@ const UsMapChart = () => {
         r: { range: [0, 40] },
         marks: [
           Plot.geo(nationTopoJsonData, {
-            fill: "#ddd",
+            fill: "grey",
             title: (d) => d.properties.name,
           }),
-          //   Plot.geo(stateMeshJsonData, {
-          //     fill: "black",
-          //     // title: (d) => d.properties.name,
-          //   }),
+          Plot.geo(stateMeshJsonData, {
+            stroke: "black",
+            // title: (d) => d.properties.name,
+          }),
         ],
       });
 
@@ -78,7 +80,7 @@ const UsMapChart = () => {
         currentPlotRef.innerHTML = "";
       }
     };
-  }, [nationTopoJsonData]);
+  }, [stateMeshJsonData, nationTopoJsonData]);
 
   return <div ref={plotRef}>{/* The map will be rendered here */}</div>;
 };
