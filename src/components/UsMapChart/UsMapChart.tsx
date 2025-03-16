@@ -12,14 +12,24 @@ const UsMapChart = () => {
   const [stateMeshJsonData, setStateMeshJsonData] = useState<ReturnType<
     typeof mesh
   > | null>(null);
+  const [countiesMeshJsonData, setCountiesMeshJsonData] = useState<ReturnType<
+    typeof mesh
+  > | null>(null);
+  const [newyorkTopoJsonData, setNewyorkTopoJsonData] = useState<ReturnType<
+    typeof feature
+  > | null>(null);
+  const [massachusettsTopoJsonData, setMassachusettsTopoJsonData] =
+    useState<ReturnType<typeof feature> | null>(null);
 
   const countiesAlbers10m = "counties-albers-10m.json";
 
   useEffect(() => {
     const fetchGeoData = async () => {
+      // Fetch Geo Data
       const geoJsonDataJson = await fetch(`/${countiesAlbers10m}`);
       const geoJsonData = await geoJsonDataJson.json();
 
+      // Nation
       console.log("geoJsonData", geoJsonData);
       const nationTopoJsonData = feature(
         geoJsonData,
@@ -28,19 +38,51 @@ const UsMapChart = () => {
       setNationTopoJsonData(nationTopoJsonData);
       console.log("nationTopoJsonData", nationTopoJsonData);
 
-      //   const stateMeshJson = await fetch("/state-mesh.json");
-      //   const stateMeshData = await stateMeshJson.json();
+      // New York
+      const newYorkGeoJson = JSON.parse(JSON.stringify(geoJsonData));
 
+      newYorkGeoJson.objects.states.geometries =
+        geoJsonData.objects.states.geometries.filter(
+          (d) => d.properties.name === "New York"
+        );
+
+      const newyorkTopoJsonData = feature(
+        newYorkGeoJson,
+        newYorkGeoJson.objects.states
+      );
+      setNewyorkTopoJsonData(newyorkTopoJsonData);
+
+      // Massachusetts
+      const massachusettsGeoJson = JSON.parse(JSON.stringify(geoJsonData));
+
+      massachusettsGeoJson.objects.states.geometries =
+        massachusettsGeoJson.objects.states.geometries.filter(
+          (d) => d.properties.name === "Massachusetts"
+        );
+      const massachusettsTopoJsonData = feature(
+        massachusettsGeoJson,
+        massachusettsGeoJson.objects.states
+      );
+      setMassachusettsTopoJsonData(massachusettsTopoJsonData);
+      console.log("massachusettsTopoJsonData", massachusettsTopoJsonData);
+
+      // State Borders
       const stateMeshData = mesh(
         geoJsonData,
         geoJsonData.objects.states,
         (a, b) => a !== b
       );
-
-      //   const stateMeshData = feature(geoJsonData, geoJsonData.objects.states);
-
-      console.log("stateMeshData", stateMeshData);
       setStateMeshJsonData(stateMeshData);
+      console.log("stateMeshData", stateMeshData);
+
+      // Counties
+      const countiesMeshData = mesh(
+        geoJsonData,
+        geoJsonData.objects.counties,
+        (a, b) => a !== b
+      );
+      setCountiesMeshJsonData(countiesMeshData);
+      console.log("countiesMeshData", countiesMeshData);
     };
 
     fetchGeoData();
@@ -49,7 +91,14 @@ const UsMapChart = () => {
   useEffect(() => {
     const currentPlotRef = plotRef.current;
 
-    if (nationTopoJsonData && stateMeshJsonData && currentPlotRef) {
+    if (
+      nationTopoJsonData &&
+      stateMeshJsonData &&
+      countiesMeshJsonData &&
+      newyorkTopoJsonData &&
+      massachusettsTopoJsonData &&
+      currentPlotRef
+    ) {
       const nationPlot = Plot.plot({
         width: 975,
         height: 600,
@@ -61,6 +110,10 @@ const UsMapChart = () => {
             title: (d) => d.properties.name,
           }),
           Plot.geo(stateMeshJsonData, {
+            stroke: "black",
+            // title: (d) => d.properties.name,
+          }),
+          Plot.geo(countiesMeshJsonData, {
             stroke: "black",
             // title: (d) => d.properties.name,
           }),
@@ -80,7 +133,12 @@ const UsMapChart = () => {
         currentPlotRef.innerHTML = "";
       }
     };
-  }, [stateMeshJsonData, nationTopoJsonData]);
+  }, [
+    stateMeshJsonData,
+    nationTopoJsonData,
+    newyorkTopoJsonData,
+    massachusettsTopoJsonData,
+  ]);
 
   return <div ref={plotRef}>{/* The map will be rendered here */}</div>;
 };
