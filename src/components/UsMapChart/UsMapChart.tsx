@@ -20,6 +20,10 @@ const UsMapChart = () => {
   > | null>(null);
   const [massachusettsTopoJsonData, setMassachusettsTopoJsonData] =
     useState<ReturnType<typeof feature> | null>(null);
+  // state map state
+  const [stateMap, setStateMap] = useState(null);
+  // county map state
+  const [countyMap, setCountyMap] = useState(null);
 
   const [population, setPopulation] = useState(null);
 
