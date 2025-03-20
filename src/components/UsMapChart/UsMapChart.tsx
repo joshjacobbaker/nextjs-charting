@@ -177,6 +177,8 @@ const UsMapChart = () => {
     nationTopoJsonData,
     newyorkTopoJsonData,
     massachusettsTopoJsonData,
+    countiesMeshJsonData,
+    population,
   ]);
 
   return <div ref={plotRef}>{/* The map will be rendered here */}</div>;
