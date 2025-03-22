@@ -1,5 +1,13 @@
 "use client";
 
+export type Root = Root2[];
+
+export interface Root2 {
+  state: string;
+  county: string;
+  population: number;
+}
+
 import React, { useEffect, useRef, useState } from "react";
 import * as Plot from "@observablehq/plot";
 import { feature, mesh } from "topojson-client";
@@ -21,11 +29,16 @@ const UsMapChart = () => {
   const [massachusettsTopoJsonData, setMassachusettsTopoJsonData] =
     useState<ReturnType<typeof feature> | null>(null);
   // state map state
-  const [stateMap, setStateMap] = useState(null);
+  const [stateMap, setStateMap] = useState<Map<string, GeoJSON.Feature> | null>(
+    null
+  );
   // county map state
-  const [countyMap, setCountyMap] = useState(null);
+  const [countyMap, setCountyMap] = useState<Map<
+    string,
+    GeoJSON.Feature
+  > | null>(null);
 
-  const [population, setPopulation] = useState(null);
+  const [population, setPopulation] = useState<Root | null>(null);
 
   const countiesAlbers10m = "counties-albers-10m.json";
 
@@ -81,6 +94,18 @@ const UsMapChart = () => {
       setStateMeshJsonData(stateMeshData);
       console.log("stateMeshData", stateMeshData);
 
+      // Create state map
+
+      const statesFeatureCollection = feature(
+        geoJsonData,
+        geoJsonData.objects.states
+      );
+      const statemap: Map<string, GeoJSON.Feature> = new Map(
+        statesFeatureCollection.features.map((d) => [d.id, d])
+      );
+      setStateMap(statemap);
+      console.log("statemap", statesFeatureCollection);
+
       // Counties
       const countiesMeshData = mesh(
         geoJsonData,
@@ -90,17 +115,34 @@ const UsMapChart = () => {
       setCountiesMeshJsonData(countiesMeshData);
       console.log("countiesMeshData", countiesMeshData);
 
+      // Create county map
+      const countiesFeatureCollection = feature(
+        geoJsonData,
+        geoJsonData.objects.counties
+      );
+
+      const countymap: Map<string, GeoJSON.Feature> = new Map(
+        countiesFeatureCollection.features.map((d) => [d.id, d])
+      );
+
+      setCountyMap(countymap);
+
+      console.log(
+        "countymap",
+        feature(geoJsonData, geoJsonData.objects.counties)
+      );
+
       // Fetch Geo Data
       const populationJson = await fetch("/population.json");
-      const population = await populationJson.json();
-
-      const populationCleand = population
-        .slice(1) // removes a header line
-        .map(([p, state, county]) => ({
+      const population: Root = await populationJson.json();
+      console.log("population", population);
+      const populationCleand = population.map(
+        ({ population, state, county }) => ({
           state,
           county,
-          population: +p,
-        }));
+          population: +population,
+        })
+      );
 
       setPopulation(populationCleand);
     };
@@ -118,6 +160,8 @@ const UsMapChart = () => {
       newyorkTopoJsonData &&
       massachusettsTopoJsonData &&
       population &&
+      countyMap &&
+      stateMap &&
       currentPlotRef
     ) {
       const nationPlot = Plot.plot({
@@ -134,9 +178,21 @@ const UsMapChart = () => {
             stroke: "black",
             // title: (d) => d.properties.name,
           }),
-          Plot.geo(countiesMeshJsonData, {
+          // Plot.geo(countiesMeshJsonData, {
+          //   stroke: "black",
+          //   // title: (d) => d.properties.name,
+          // }),
+          Plot.geo(newyorkTopoJsonData, {
+            fill: "blue",
+            fillOpacity: 0.5,
             stroke: "black",
-            // title: (d) => d.properties.name,
+            title: "New York",
+          }),
+          Plot.geo(massachusettsTopoJsonData, {
+            fill: "red",
+            fillOpacity: 0.5,
+            stroke: "black",
+            title: "Massachusetts",
           }),
           Plot.dot(
             population,
@@ -146,14 +202,14 @@ const UsMapChart = () => {
               fillOpacity: 0.5,
               stroke: "#fff",
               strokeOpacity: 0.5,
-              // geometry: ({ state, county }) =>
-              //   countymap.get(`${state}${county}`),
-              // channels: {
-              //   county: ({ state, county }) =>
-              //     countymap.get(`${state}${county}`)?.properties.name,
-              //   state: ({ state }) => statemap.get(state)?.properties.name,
-              // },
-              // tip: true,
+              geometry: ({ state, county }) =>
+                countyMap.get(`${state}${county}`),
+              channels: {
+                county: ({ state, county }) =>
+                  countyMap.get(`${state}${county}`)?.properties?.name ?? "",
+                state: ({ state }) => stateMap?.get(state)?.properties?.name,
+              },
+              tip: true,
             })
           ),
         ],
@@ -179,6 +235,8 @@ const UsMapChart = () => {
     massachusettsTopoJsonData,
     countiesMeshJsonData,
     population,
+    countyMap,
+    stateMap,
   ]);
 
   return <div ref={plotRef}>{/* The map will be rendered here */}</div>;
