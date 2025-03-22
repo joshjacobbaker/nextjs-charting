@@ -45,3 +45,4 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - Add a list of acknowledgements
 - Add a list of references
 - Add Types for Data fetched
+- Add Types for Props passed to components
