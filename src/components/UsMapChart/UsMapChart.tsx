@@ -104,7 +104,8 @@ const UsMapChart = () => {
         statesFeatureCollection.features.map((d) => [d.id, d])
       );
       setStateMap(statemap);
-      console.log("statemap", statesFeatureCollection);
+      // console.log("statemap", statesFeatureCollection);
+      console.log("statemap", statemap);
 
       // Counties
       const countiesMeshData = mesh(
@@ -124,6 +125,8 @@ const UsMapChart = () => {
       const countymap: Map<string, GeoJSON.Feature> = new Map(
         countiesFeatureCollection.features.map((d) => [d.id, d])
       );
+
+      console.log("countyMap", countymap);
 
       setCountyMap(countymap);
 
@@ -198,10 +201,16 @@ const UsMapChart = () => {
             population,
             Plot.centroid({
               r: "population",
-              fill: "brown",
+              fill: "state",
               fillOpacity: 0.5,
               stroke: "#fff",
               strokeOpacity: 0.5,
+              // title: (d) =>
+              //   `${
+              //     (countyMap.get(`${d.state}${d.county}`)?.properties?.name ??
+              //       "",
+              //     stateMap?.get(d.state)?.properties?.name ?? "")
+              //   }: ${d.population.toLocaleString()}`,
               geometry: ({ state, county }) =>
                 countyMap.get(`${state}${county}`),
               channels: {
@@ -209,7 +218,27 @@ const UsMapChart = () => {
                   countyMap.get(`${state}${county}`)?.properties?.name ?? "",
                 state: ({ state }) => stateMap?.get(state)?.properties?.name,
               },
-              tip: true,
+            })
+          ),
+          Plot.tip(
+            population,
+            Plot.pointer({
+              x: (d) => d.state,
+              y: (d) => d.county,
+              // geometry: ({ state, county }) =>
+              //   countyMap.get(`${state}${county}`),
+              fill: "state",
+              fillOpacity: 0.6,
+              stroke: "white",
+              strokeWidth: 2,
+              title: (d) => {
+                return `${
+                  countyMap.get(`${d.state}${d.county}`)?.properties?.name ?? ""
+                }, ${
+                  stateMap?.get(d.state)?.properties?.name ?? ""
+                }: ${d.population.toLocaleString()} /n ${JSON.stringify(d)}`;
+              },
+              highlight: true, // Add this line to enable highlighting
             })
           ),
         ],
